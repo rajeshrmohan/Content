@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ITE CW Content Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a73e8; /* Google Blue */
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h2 {
+            display: flex; /* For aligning button with text */
+            align-items: center; /* For aligning button with text */
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #5f6368;
+        }
+        input[type="password"],
+        textarea {
+            width: calc(100% - 24px);
+            padding: 10px;
+            margin-bottom: 18px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: monospace;
+        }
+        button {
+            background-color: #1a73e8;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #1765cf;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .api-key-warning {
+            background-color: #fef7e0;
+            color: #5f6368;
+            padding: 12px;
+            border: 1px solid #fde293;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        #responseArea {
+            margin-top: 25px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            min-height: 150px;
+            white-space: pre-wrap;
+        }
+        #responseArea table { border-collapse: collapse; width: 100%; margin-bottom: 1em; font-size: 0.9em; }
+        #responseArea th, #responseArea td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        #responseArea th { background-color: #e9ecef; }
+        #responseArea pre { background-color: #e8eaed; padding: 12px; border-radius: 4px; overflow-x: auto; }
+        #responseArea code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; }
+        #loadingIndicator { display: none; margin-top: 10px; font-style: italic; color: #5f6368; }
+
+        #saveToWordBtn {
+            margin-left: 15px; /* Spacing from "Response:" text */
+            padding: 8px 10px; /* Smaller padding for icon button */
+            font-size: 18px;   /* Icon size */
+            background-color: #4CAF50; /* Green color for save */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            line-height: 1; /* Ensure icon is centered vertically */
+        }
+        #saveToWordBtn:hover {
+            background-color: #45a049;
+        }
+        #saveToWordBtn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CW SEIT Content Generator</h1>
+        <label for="taskInput">Enter Title and Topice of Content:</label>
+        <textarea id="taskInput">Python Lesson Plan
+Python Loops
+Python Condition
+Python Quiz</textarea>
+        <button id="submitBtn">Generate Content</button>
+        <div id="loadingIndicator">Generating content...</div>
+        <h2>
+            Response:
+            <button id="saveToWordBtn" title="Save as Word Document" disabled>💾</button>
+        </h2>
+        <div id="responseArea"></div>
+    </div>
+
+    <script>
+        const decryptionShiftKey = 3; 
+        const taskInput = document.getElementById('taskInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const responseArea = document.getElementById('responseArea');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const saveToWordBtn = document.getElementById('saveToWordBtn');
+
+
+        const obfuscatedApiKey = "DL}dV|E|VkwTzoz{wMvYPtd<8moU:oS97DSp0en"; 
+
+        
+        function pseudoDecrypt(str, key) {
+            let result = "";
+            for (let i = 0; i < str.length; i++) {
+                result += String.fromCharCode(str.charCodeAt(i) - key);
+            }
+            return result;
+        }
+
+        function getApiKey() {
+            try {
+                if (!obfuscatedApiKey || typeof decryptionShiftKey !== 'number') {
+                    console.error("Obfuscation variables not set correctly.");
+                    return "CONFIG_ERROR_OBFUSCATION_VARS_MISSING";
+                }
+                return pseudoDecrypt(obfuscatedApiKey, decryptionShiftKey);
+            } catch (e) {
+                console.error("Error decrypting API key:", e);
+                return "DECRYPTION_ERROR_INVALID_KEY";
+            }
+        }
+
+        submitBtn.addEventListener('click', async () => {
+            const apiKey = getApiKey().trim();
+            const userTask = taskInput.value.trim();
+
+
+
+            responseArea.innerHTML = "";
+            submitBtn.disabled = true;
+            saveToWordBtn.disabled = true;
+            loadingIndicator.style.display = 'block';
+
+            const GEMINI_MODEL = "gemini-1.5-flash-latest";
+            // Ensure the API key is correctly inserted into the URL
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?key=${apiKey}&alt=sse`;
+
+            console.log("API URL being used:", API_URL); // Log the full URL to check
+
+            const requestBody = {
+                "contents": [{"parts": [{"text": userTask}]}],
+                "generationConfig": {"temperature": 0.7, "maxOutputTokens": 8192}
+            };
+            console.log("Request Body:", JSON.stringify(requestBody));
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(requestBody)
+                });
+
+                console.log("Fetch response status:", response.status, "OK:", response.ok);
+
+                if (!response.ok) {
+                    let errorText = `Error: ${response.status} ${response.statusText}`;
+                    try {
+                        const errorData = await response.json();
+                        console.error("API Error Data:", errorData);
+                        errorText += `. ${errorData.error?.message || 'Unknown API error'}`;
+                    } catch (e) {
+                        console.error("Could not parse error response JSON:", e);
+                        errorText += ". Additionally, the error response was not valid JSON."
+                    }
+                    responseArea.innerHTML = `<p style="color:red;">${errorText}</p>`;
+                    saveToWordBtn.disabled = true;
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let accumulatedContent = "";
+                let buffer = "";
+
+                console.log("Starting to read stream...");
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        console.log("Stream finished.");
+                        break;
+                    }
+                    buffer += decoder.decode(value, { stream: true });
+                    let eolIndex;
+                    while ((eolIndex = buffer.indexOf('\n')) >= 0) {
+                        const line = buffer.substring(0, eolIndex).trim();
+                        buffer = buffer.substring(eolIndex + 1);
+
+                        if (line.startsWith("data:")) {
+                            const jsonDataString = line.substring(5).trim();
+                            if (jsonDataString && jsonDataString !== "[DONE]") {
+                                try {
+                                    const parsedChunk = JSON.parse(jsonDataString);
+                                    if (parsedChunk.error) {
+                                        console.error("Error in streamed chunk:", parsedChunk.error);
+                                        accumulatedContent += `\n\n**Error from API Stream: ${parsedChunk.error.message}**\n\n`;
+                                    } else if (parsedChunk.candidates && parsedChunk.candidates.length > 0) {
+                                        const candidate = parsedChunk.candidates[0];
+                                        if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+                                            const textPart = candidate.content.parts[0].text;
+                                            if (textPart) {
+                                                accumulatedContent += textPart;
+                                            }
+                                        }
+                                    }
+                                    responseArea.innerHTML = marked.parse(accumulatedContent);
+                                } catch (e) {
+                                    console.warn("Stream: Could not parse JSON data from line:", jsonDataString, "Error:", e);
+                                }
+                            } else if (jsonDataString === "[DONE]"){
+                                console.log("Stream: Received [DONE] marker.");
+                            }
+                        } else if (line.trim() !== "" && !line.startsWith("event:") && !line.startsWith("id:") && !line.startsWith(":")) {
+                            console.log("Stream: Non-data, non-empty line encountered:", line);
+                        }
+                    }
+                }
+                console.log("Stream reading complete. Final accumulated content length:", accumulatedContent.length);
+                if (accumulatedContent.length === 0) {
+                    console.warn("No content was accumulated from the stream. Check API response and parsing logic.");
+                    responseArea.innerHTML = "<p><i>No content received or extracted from the stream. Check console for details.</i></p>";
+                    saveToWordBtn.disabled = true;
+                } else {
+                     responseArea.innerHTML = marked.parse(accumulatedContent);
+                     if (responseArea.querySelector('p[style*="color:red"]') || accumulatedContent.includes("**Error from API Stream:")) {
+                         saveToWordBtn.disabled = true;
+                     } else {
+                         saveToWordBtn.disabled = false;
+                     }
+                }
+
+            } catch (error) {
+                console.error("Fetch API call or stream processing failed:", error);
+                responseArea.innerHTML = `<p style="color:red;">General Error: ${error.message}. Check console for more details.</p>`;
+                saveToWordBtn.disabled = true;
+            } finally {
+                submitBtn.disabled = false;
+                loadingIndicator.style.display = 'none';
+                if (responseArea.innerHTML.trim() === "" || responseArea.querySelector('p[style*="color:red"]')) {
+                     saveToWordBtn.disabled = true;
+                }
+                console.log("Operation finished. UI unlocked.");
+            }
+        });
+
+        saveToWordBtn.addEventListener('click', () => {
+            const contentHTML = responseArea.innerHTML;
+            if (contentHTML.trim() === "" || responseArea.querySelector('p[style*="color:red"]')) {
+                alert("No valid content to save or content contains an error.");
+                return;
+            }
+
+            try {
+                const converted = htmlDocx.asBlob(contentHTML);
+                saveAs(converted, 'GeneratedContent.docx');
+                console.log("Content prepared for DOCX download.");
+            } catch (e) {
+                console.error("Error generating DOCX:", e);
+                alert("Error generating Word document. Please check the console for details.");
+            }
+        });
+
+        marked.setOptions({
+            renderer: new marked.Renderer(), pedantic: false, gfm: true,
+            breaks: false, sanitize: false, smartypants: false, xhtml: false
+        });
+    </script>
+</body>
+</html>
